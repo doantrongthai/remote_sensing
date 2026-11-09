@@ -1,0 +1,14 @@
+model: unet
+modality: s1s2
+in_channels: 15
+num_classes: 2
+batch_size: 32
+epochs: 25
+lr: 0.001
+weight_decay: 0.0001
+optimizer: AdamW
+scheduler: CosineAnnealingLR
+loss: BCEDiceLoss
+ignore_index: 255
+gradcam_target_layer: "inc.net.3"
+justification: "Early fusion multimodal baseline combining S1 SAR and S2 optical bands."

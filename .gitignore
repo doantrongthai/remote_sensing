@@ -1,0 +1,40 @@
+# Large datasets & raw downloads
+*.tif
+*.tiff
+*.zip
+*.tar.gz
+*.part
+data/*.tif
+data/*/*.tif
+data/S1Hand/
+data/S2Hand/
+data/LabelHand/
+
+# Model weights & binary checkpoints
+*.pt
+*.pth
+*.safetensors
+*.bin
+*.onnx
+weights/*.pt
+weights/*.pth
+weights/*/*.pt
+weights/*/*.pth
+
+# Experiment runs & logs
+runs/
+outputs/
+checkpoints/
+
+# Secrets & credentials
+.env
+*.token
+*secrets*
+*credentials*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.pytest_cache/

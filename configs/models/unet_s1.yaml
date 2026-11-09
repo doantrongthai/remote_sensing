@@ -1,0 +1,14 @@
+model: unet
+modality: s1
+in_channels: 2
+num_classes: 2
+batch_size: 32
+epochs: 25
+lr: 0.001
+weight_decay: 0.0001
+optimizer: AdamW
+scheduler: CosineAnnealingLR
+loss: BCEDiceLoss
+ignore_index: 255
+gradcam_target_layer: "inc.net.3"
+justification: "Standard baseline architecture evaluated on Sentinel-1 dual-polarization SAR under uniform policy."

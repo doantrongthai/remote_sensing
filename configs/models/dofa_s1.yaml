@@ -1,0 +1,14 @@
+model: dofa
+modality: s1
+in_channels: 2
+num_classes: 2
+batch_size: 32
+epochs: 25
+lr: 0.0005
+weight_decay: 0.0001
+optimizer: AdamW
+scheduler: CosineAnnealingLR
+loss: BCEDiceLoss
+ignore_index: 255
+gradcam_target_layer: "encoder.layers.1.norm2"
+justification: "Dynamic one-for-all cross-modality foundation model adapter with wavelength embeddings."

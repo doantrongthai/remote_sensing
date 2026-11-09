@@ -1,0 +1,98 @@
+[
+  {
+    "model": "UNet (S1, 2-band)",
+    "input_size": "256x256",
+    "params_millions": 7.76,
+    "latency_ms": 85.14,
+    "fps": 11.75,
+    "device": "cpu"
+  },
+  {
+    "model": "UNet (S1, 2-band)",
+    "input_size": "512x512",
+    "params_millions": 7.76,
+    "latency_ms": 428.92,
+    "fps": 2.33,
+    "device": "cpu"
+  },
+  {
+    "model": "UNet (S1+S2, 15-band)",
+    "input_size": "256x256",
+    "params_millions": 7.77,
+    "latency_ms": 92.48,
+    "fps": 10.81,
+    "device": "cpu"
+  },
+  {
+    "model": "UNet (S1+S2, 15-band)",
+    "input_size": "512x512",
+    "params_millions": 7.77,
+    "latency_ms": 445.77,
+    "fps": 2.24,
+    "device": "cpu"
+  },
+  {
+    "model": "DeepLabV3+ (S1, 2-band)",
+    "input_size": "256x256",
+    "params_millions": 6.98,
+    "latency_ms": 146.93,
+    "fps": 6.81,
+    "device": "cpu"
+  },
+  {
+    "model": "DeepLabV3+ (S1, 2-band)",
+    "input_size": "512x512",
+    "params_millions": 6.98,
+    "latency_ms": 585.09,
+    "fps": 1.71,
+    "device": "cpu"
+  },
+  {
+    "model": "SegFormer (S1, 2-band)",
+    "input_size": "256x256",
+    "params_millions": 2.01,
+    "latency_ms": 14.52,
+    "fps": 68.85,
+    "device": "cpu"
+  },
+  {
+    "model": "SegFormer (S1, 2-band)",
+    "input_size": "512x512",
+    "params_millions": 2.01,
+    "latency_ms": 62.13,
+    "fps": 16.09,
+    "device": "cpu"
+  },
+  {
+    "model": "PrithviAdapter (S2, 13-band)",
+    "input_size": "256x256",
+    "params_millions": 16.32,
+    "latency_ms": 36.99,
+    "fps": 27.03,
+    "device": "cpu"
+  },
+  {
+    "model": "PrithviAdapter (S2, 13-band)",
+    "input_size": "512x512",
+    "params_millions": 16.32,
+    "latency_ms": 199.95,
+    "fps": 5.0,
+    "device": "cpu"
+  },
+  {
+    "model": "DOFAAdapter (S1, 2-band)",
+    "input_size": "256x256",
+    "params_millions": 26.26,
+    "latency_ms": 119.9,
+    "fps": 8.34,
+    "device": "cpu"
+  },
+  {
+    "model": "DOFAAdapter (S1, 2-band)",
+    "input_size": "512x512",
+    "params_millions": 26.26,
+    "latency_ms": 508.19,
+    "fps": 1.97,
+    "device": "cpu"
+  }
+]
