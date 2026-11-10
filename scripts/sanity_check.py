@@ -18,6 +18,14 @@ from models.manet import MANet
 from models.attentive_unet import AttentiveUNet
 from models.pan import PAN
 from models.farseg import FarSeg
+from models.hydropins_net import HydroPINSNet
+from models.wavelet_procanet_v2 import WaveletProCANetV2
+from models.edgeflow_net import EdgeFlowNet
+from models.stripcross_net_v2 import StripCrossNetV2
+from models.wavekan_hydronet import WaveKANHydroNet
+from models.spectralgate_net import SpectralGateNet
+from models.turbidwater_net import TurbidWaterNet
+from models.shadowfree_net import ShadowFreeNet
 
 def test_split_counts(data_path):
     res = verify_dataset(data_path)
@@ -117,6 +125,22 @@ def test_model_forward():
     m_farseg = FarSeg(in_channels=2, num_classes=2)
     out_farseg = m_farseg(x_s1)
     assert out_farseg.shape == (1, 2, 256, 256)
+    
+    x_4ch = torch.randn(1, 4, 256, 256)
+    novel_models = [
+        HydroPINSNet,
+        WaveletProCANetV2,
+        EdgeFlowNet,
+        StripCrossNetV2,
+        WaveKANHydroNet,
+        SpectralGateNet,
+        TurbidWaterNet,
+        ShadowFreeNet
+    ]
+    for m_cls in novel_models:
+        mod = m_cls(in_channels=4, num_classes=2)
+        out = mod(x_4ch)
+        assert out.shape == (1, 2, 256, 256), f"Failed shape for {m_cls.__name__}"
     
     return True
 

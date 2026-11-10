@@ -19,28 +19,64 @@ from models.manet import MANet
 from models.attentive_unet import AttentiveUNet
 from models.pan import PAN
 from models.farseg import FarSeg
+from models.hydropins_net import HydroPINSNet
+from models.wavelet_procanet_v2 import WaveletProCANetV2
+from models.edgeflow_net import EdgeFlowNet
+from models.stripcross_net_v2 import StripCrossNetV2
+from models.wavekan_hydronet import WaveKANHydroNet
+from models.spectralgate_net import SpectralGateNet
+from models.turbidwater_net import TurbidWaterNet
+from models.shadowfree_net import ShadowFreeNet
+
+import models
 
 def build_model(model_name, modality, num_classes=2):
-    in_channels = 2 if modality == 's1' else (13 if modality == 's2' else 15)
-    name = model_name.lower()
-    if name == 'unet':
-        return UNet(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'deeplabv3plus':
-        return DeepLabV3Plus(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'segformer':
-        return SegFormer(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'prithvi':
-        return PrithviAdapter(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'dofa':
-        return DOFAAdapter(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'manet':
-        return MANet(in_channels=in_channels, num_classes=num_classes)
-    elif name in ['attentive_unet', 'attentiveunet', 'attentive_s1']:
-        return AttentiveUNet(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'pan':
-        return PAN(in_channels=in_channels, num_classes=num_classes)
-    elif name == 'farseg':
-        return FarSeg(in_channels=in_channels, num_classes=num_classes)
+    if modality == 's1':
+        in_channels = 2
+    elif modality in ['s2_4ch', '4ch']:
+        in_channels = 4
+    elif modality == 's2':
+        in_channels = 4
+    elif modality == 's1s2':
+        in_channels = 15
+    else:
+        in_channels = 4
+        
+    canonical = model_name.lower().replace('_', '').replace('-', '')
+    for export_name in models.__all__:
+        if export_name.lower().replace('_', '') == canonical:
+            cls = getattr(models, export_name)
+            return cls(in_channels=in_channels, num_classes=num_classes)
+            
+    aliases = {
+        'attentiveunet': models.AttentiveUNet,
+        'attentive_s1': models.AttentiveUNet,
+        'proca': models.ProCANet,
+        'proca_edge': models.ProCAEdgeNet,
+        'hydro_proca': models.HydroProCANet,
+        'wavelet_proca': models.WaveletProCANet,
+        'strip_proca': models.StripProCANet,
+        'bmg_proca': models.BMGProCANet,
+        'kan_proca': models.KANProCANet,
+        'hydropins': models.HydroPINSNet,
+        'edgeflow': models.EdgeFlowNet,
+        'stripcross': models.StripCrossNetV2,
+        'wavekan': models.WaveKANHydroNet,
+        'spectralgate': models.SpectralGateNet,
+        'turbidwater': models.TurbidWaterNet,
+        'shadowfree': models.ShadowFreeNet,
+        'unet++': models.UNetPlusPlus,
+        'hrnet': models.HRNetV2,
+    }
+    if canonical in aliases:
+        return aliases[canonical](in_channels=in_channels, num_classes=num_classes)
+    raise ValueError(f"Unknown model: '{model_name}'. Available: {sorted(models.__all__)}")
+    elif name in ['spectralgate_net', 'spectralgatenet', 'spectralgate']:
+        return SpectralGateNet(in_channels=in_channels, num_classes=num_classes)
+    elif name in ['turbidwater_net', 'turbidwaternet', 'turbidwater']:
+        return TurbidWaterNet(in_channels=in_channels, num_classes=num_classes)
+    elif name in ['shadowfree_net', 'shadowfreenet', 'shadowfree']:
+        return ShadowFreeNet(in_channels=in_channels, num_classes=num_classes)
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 
