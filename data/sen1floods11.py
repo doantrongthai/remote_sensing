@@ -5,8 +5,43 @@ import torch
 from torch.utils.data import Dataset
 import tifffile as tiff
 
+def _find_dir(base_dir, target_name):
+    """
+    Search for target_name within base_dir directly, or case-insensitive, or 1 level deeper.
+    """
+    if not base_dir or not os.path.exists(base_dir):
+        return os.path.join(base_dir or '', target_name)
+    for name in [target_name, target_name.lower(), target_name.capitalize()]:
+        p = os.path.join(base_dir, name)
+        if os.path.isdir(p):
+            return p
+    # Check 1 level down
+    try:
+        for sub in os.listdir(base_dir):
+            sub_p = os.path.join(base_dir, sub)
+            if os.path.isdir(sub_p):
+                for name in [target_name, target_name.lower(), target_name.capitalize()]:
+                    p = os.path.join(sub_p, name)
+                    if os.path.isdir(p):
+                        return p
+    except Exception:
+        pass
+    return os.path.join(base_dir, target_name)
+
 class Sen1Floods11Dataset(Dataset):
-    def __init__(self, root_dir, split='train', modality='s1', crop_size=None, transform=None):
+    def __init__(self, root_dir=None, split='train', modality='s1', crop_size=None, transform=None):
+        if root_dir is None:
+            # Fallback candidates for Kaggle and local environments
+            candidates = [
+                '/kaggle/input/datasets/doantrongthai/sen1floods11',
+                '/kaggle/input/sen1floods11',
+                '/kaggle/working/data',
+                r'D:\Downloads\remote_sensing\sen1floods11_256x256',
+                r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled',
+                './data'
+            ]
+            root_dir = next((c for c in candidates if os.path.exists(c)), candidates[0])
+
         self.root_dir = root_dir
         self.split = split
         self.modality = modality.lower()
@@ -20,23 +55,33 @@ class Sen1Floods11Dataset(Dataset):
             'bolivia': 'flood_bolivia_data.csv'
         }
         
-        splits_dir = os.path.join(root_dir, 'splits')
-        if not os.path.isdir(splits_dir):
-            splits_dir = root_dir
+        self.label_dir = _find_dir(self.root_dir, 'LabelHand')
+        self.s1_dir = _find_dir(self.root_dir, 'S1Hand')
+        self.s2_dir = _find_dir(self.root_dir, 'S2Hand')
+        self.splits_dir = _find_dir(self.root_dir, 'splits')
+        
+        csv_file = os.path.join(self.splits_dir, split_map[split])
+        if not os.path.exists(csv_file):
+            alt_csv = os.path.join(self.root_dir, split_map[split])
+            if os.path.exists(alt_csv):
+                csv_file = alt_csv
             
-        csv_file = os.path.join(splits_dir, split_map[split])
         self.samples = []
-        with open(csv_file, 'r') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) >= 2:
-                    self.samples.append((row[0].strip(), row[1].strip()))
+        if os.path.exists(csv_file):
+            with open(csv_file, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) >= 2:
+                        self.samples.append((row[0].strip(), row[1].strip()))
+        else:
+            print(f"[Warning] CSV split file not found: {csv_file}")
 
     def __len__(self):
         return len(self.samples)
 
     def _load_s1(self, filename):
-        path = os.path.join(self.root_dir, 'S1Hand', filename)
+        fname = os.path.basename(filename)
+        path = os.path.join(self.s1_dir, fname)
         arr = tiff.imread(path).astype(np.float32)
         arr = np.nan_to_num(arr, nan=0.0)
         arr = np.clip(arr, -50.0, 1.0)
@@ -44,8 +89,8 @@ class Sen1Floods11Dataset(Dataset):
         return arr
 
     def _load_s2(self, filename):
-        s2_filename = filename.replace('_S1Hand.tif', '_S2Hand.tif')
-        path = os.path.join(self.root_dir, 'S2Hand', s2_filename)
+        fname = os.path.basename(filename).replace('_S1Hand.tif', '_S2Hand.tif')
+        path = os.path.join(self.s2_dir, fname)
         arr = tiff.imread(path).astype(np.float32)
         arr = np.nan_to_num(arr, nan=0.0)
         arr = arr / 10000.0
@@ -53,7 +98,8 @@ class Sen1Floods11Dataset(Dataset):
         return arr
 
     def _load_label(self, filename):
-        path = os.path.join(self.root_dir, 'LabelHand', filename)
+        fname = os.path.basename(filename)
+        path = os.path.join(self.label_dir, fname)
         arr = tiff.imread(path).astype(np.int64)
         arr[arr == -1] = 255
         return arr

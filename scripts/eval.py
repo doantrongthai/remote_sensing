@@ -78,9 +78,23 @@ def evaluate(args):
     results = evaluator.compute()
     return results
 
+def get_default_data_dir():
+    candidates = [
+        '/kaggle/input/datasets/doantrongthai/sen1floods11',
+        '/kaggle/input/sen1floods11',
+        '/kaggle/working/data',
+        r'D:\Downloads\remote_sensing\sen1floods11_256x256',
+        r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled',
+        './data'
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return '/kaggle/input/datasets/doantrongthai/sen1floods11'
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default=r'D:\Downloads\remote_sensing\sen1floods11_256x256')
+    parser.add_argument('--data_dir', type=str, default=get_default_data_dir())
     parser.add_argument('--split', type=str, default='test', choices=['test', 'bolivia', 'valid'])
     parser.add_argument('--modality', type=str, default='s1', choices=['s1', 's2', 's1s2'])
     parser.add_argument('--model', type=str, default='unet', choices=['unet', 'deeplabv3plus', 'segformer', 'prithvi', 'dofa'])

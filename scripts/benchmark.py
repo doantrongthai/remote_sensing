@@ -100,9 +100,23 @@ def run_multi_seed_benchmark(args):
         
     print(f"\nAll benchmark runs completed. Results recorded to {runs_csv_path}")
 
+def get_default_data_dir():
+    candidates = [
+        '/kaggle/input/datasets/doantrongthai/sen1floods11',
+        '/kaggle/input/sen1floods11',
+        '/kaggle/working/data',
+        r'D:\Downloads\remote_sensing\sen1floods11_256x256',
+        r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled',
+        './data'
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return '/kaggle/input/datasets/doantrongthai/sen1floods11'
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default=r'D:\Downloads\remote_sensing\sen1floods11_256x256')
+    parser.add_argument('--data_dir', type=str, default=get_default_data_dir())
     parser.add_argument('--models', nargs='+', default=['unet'])
     parser.add_argument('--modality', type=str, default='s1', choices=['s1', 's2', 's1s2'])
     parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44, 45, 46])

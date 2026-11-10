@@ -35,7 +35,14 @@ def verify_dataset(root_dir):
     return results
 
 if __name__ == '__main__':
-    default_path = r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled'
+    candidates = [
+        '/kaggle/input/datasets/doantrongthai/sen1floods11',
+        '/kaggle/input/sen1floods11',
+        '/kaggle/working/data',
+        r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled',
+        r'D:\Downloads\remote_sensing\sen1floods11_256x256'
+    ]
+    default_path = next((c for c in candidates if os.path.exists(c)), candidates[0])
     res = verify_dataset(default_path)
     for k, v in res.items():
         print(f"{k}: {v['status']} (Expected: {v['expected']}, Found: {v['found']})")

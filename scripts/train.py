@@ -7,7 +7,38 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.cuda.amp import autocast, GradScaler
+
+def get_grad_scaler():
+    if hasattr(torch, 'amp') and hasattr(torch.amp, 'GradScaler'):
+        try:
+            return torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
+        except Exception:
+            pass
+    from torch.cuda.amp import GradScaler
+    return GradScaler(enabled=torch.cuda.is_available())
+
+def get_autocast():
+    if hasattr(torch, 'amp') and hasattr(torch.amp, 'autocast'):
+        try:
+            return torch.amp.autocast('cuda', enabled=torch.cuda.is_available())
+        except Exception:
+            pass
+    from torch.cuda.amp import autocast
+    return autocast(enabled=torch.cuda.is_available())
+
+def get_default_data_dir():
+    candidates = [
+        '/kaggle/input/datasets/doantrongthai/sen1floods11',
+        '/kaggle/input/sen1floods11',
+        '/kaggle/working/data',
+        r'D:\Downloads\remote_sensing\sen1floods11_256x256',
+        r'D:\Downloads\remote_sensing\sen1floods11_hand_labeled',
+        './data'
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return '/kaggle/input/datasets/doantrongthai/sen1floods11'
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -59,7 +90,8 @@ def train_single_model(model_name, args, device):
     criterion = BCEDiceLoss(ignore_index=255)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
-    scaler = GradScaler(enabled=torch.cuda.is_available())
+    scaler = get_grad_scaler()
+    autocast_ctx = get_autocast
     
     os.makedirs(args.save_dir, exist_ok=True)
     best_ckpt = os.path.join(args.save_dir, f"{model_name}_{args.modality}_best.pth")
@@ -75,7 +107,7 @@ def train_single_model(model_name, args, device):
         for imgs, masks in train_loader:
             imgs, masks = imgs.to(device), masks.to(device)
             optimizer.zero_grad()
-            with autocast(enabled=torch.cuda.is_available()):
+            with autocast_ctx():
                 preds = model(imgs)
                 loss = criterion(preds, masks)
             scaler.scale(loss).backward()
@@ -115,7 +147,12 @@ def train_single_model(model_name, args, device):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default=r'D:\Downloads\remote_sensing\sen1floods11_256x256')
+    parser.add_argument(
+        '--data_dir', 
+        type=str, 
+        default=get_default_data_dir(),
+        help='Root directory containing LabelHand, S1Hand, S2Hand, splits'
+    )
     parser.add_argument('--save_dir', type=str, default='./checkpoints')
     parser.add_argument('--model', type=str, default='unet', choices=['unet', 'deeplabv3plus', 'segformer', 'all'])
     parser.add_argument('--modality', type=str, default='s1', choices=['s1', 's2', 's1s2'])
@@ -132,6 +169,8 @@ def main():
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
     print(f"Device: {device} | Data: {args.data_dir}")
+    label_check = os.path.join(args.data_dir, 'LabelHand')
+    print(f"Data verification -> LabelHand: {label_check} (Exists: {os.path.exists(label_check)})")
     
     models_to_run = ['unet', 'deeplabv3plus', 'segformer'] if args.model == 'all' else [args.model]
     all_summaries = []
