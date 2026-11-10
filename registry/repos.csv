@@ -10,4 +10,7 @@ model_or_paper,repo_type,repo_url,commit_or_tag,license,framework,train_code,eva
 "SSL4EO-S12","official","https://github.com/zhu-xlab/SSL4EO-S12.git","main","MIT","PyTorch / torchvision",YES,YES,YES,NO,YES,"ACTIVE_VERIFIED"
 "ProCANet (Feliren et al. 2025)","official","NO_OFFICIAL_REPO","N/A","N/A","N/A",NO,NO,NO,NO,NO,"CONFIRMED_ABSENT"
 "ADSS-UNet (Yadav et al. IGARSS 2022)","official","NO_OFFICIAL_REPO","N/A","N/A","N/A",NO,NO,NO,NO,NO,"CONFIRMED_ABSENT"
+"MANet (Rui Li et al. 2021)","official","https://github.com/lironui/Multi-Attention-Network.git","master","MIT","PyTorch",YES,YES,NO,YES,YES,"ACTIVE_VERIFIED"
+"PAN (Pyramid Attention Network)","official","https://github.com/alan-h-li/PAN.git","master","MIT","PyTorch",YES,YES,NO,NO,YES,"ACTIVE_VERIFIED"
+"FarSeg (Zhuo Zheng et al. 2020)","official","https://github.com/Z-Zheng/FarSeg.git","master","MIT","PyTorch",YES,YES,YES,YES,YES,"ACTIVE_VERIFIED"
 "Standard SMP Baselines (UNet/UNet++/DeepLabV3+)","community_adapter","https://github.com/qubvel/segmentation_models.pytorch.git","v0.3.3","MIT","PyTorch / timm",YES,YES,YES,NO,NO,"COMMUNITY_TOOLKIT"

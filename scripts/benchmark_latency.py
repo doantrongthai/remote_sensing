@@ -11,6 +11,10 @@ from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
 from models.prithvi_wrapper import PrithviAdapter
 from models.dofa_wrapper import DOFAAdapter
+from models.manet import MANet
+from models.attentive_unet import AttentiveUNet
+from models.pan import PAN
+from models.farseg import FarSeg
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -41,6 +45,10 @@ def run_benchmarks(out_file=None):
         'UNet (S1+S2, 15-band)': (UNet(in_channels=15, num_classes=2), 15),
         'DeepLabV3+ (S1, 2-band)': (DeepLabV3Plus(in_channels=2, num_classes=2), 2),
         'SegFormer (S1, 2-band)': (SegFormer(in_channels=2, num_classes=2), 2),
+        'AttentiveUNet (S1, 2-band)': (AttentiveUNet(in_channels=2, num_classes=2), 2),
+        'MANet (S1, 2-band)': (MANet(in_channels=2, num_classes=2), 2),
+        'PAN (S1, 2-band)': (PAN(in_channels=2, num_classes=2), 2),
+        'FarSeg (S1, 2-band)': (FarSeg(in_channels=2, num_classes=2), 2),
         'PrithviAdapter (S2, 13-band)': (PrithviAdapter(in_channels=13, num_classes=2, depth=2), 13),
         'DOFAAdapter (S1, 2-band)': (DOFAAdapter(in_channels=2, num_classes=2, depth=2), 2)
     }

@@ -48,6 +48,10 @@ from metrics.evaluator import FloodMetricEvaluator
 from models.unet import UNet
 from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
+from models.manet import MANet
+from models.attentive_unet import AttentiveUNet
+from models.pan import PAN
+from models.farseg import FarSeg
 
 def get_model(name, in_channels, num_classes=2):
     n = name.lower()
@@ -57,6 +61,14 @@ def get_model(name, in_channels, num_classes=2):
         return DeepLabV3Plus(in_channels=in_channels, num_classes=num_classes)
     elif n == 'segformer':
         return SegFormer(in_channels=in_channels, num_classes=num_classes)
+    elif n == 'manet':
+        return MANet(in_channels=in_channels, num_classes=num_classes)
+    elif n in ['attentive_unet', 'attentiveunet', 'attentive_s1']:
+        return AttentiveUNet(in_channels=in_channels, num_classes=num_classes)
+    elif n == 'pan':
+        return PAN(in_channels=in_channels, num_classes=num_classes)
+    elif n == 'farseg':
+        return FarSeg(in_channels=in_channels, num_classes=num_classes)
     else:
         raise ValueError(f"Unknown model: {name}")
 
@@ -180,7 +192,7 @@ def main():
         '--model', 
         type=str, 
         default='all', 
-        choices=['all', 'unet', 'deeplabv3plus', 'segformer']
+        help="Model name ('all', 'unet', 'deeplabv3plus', 'segformer', 'attentive_unet', 'manet', 'pan', 'farseg', or comma-separated list)"
     )
     parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 's1s2'])
     parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR, 13 for full Sentinel-2')
@@ -203,7 +215,12 @@ def main():
     label_check = os.path.join(args.data_dir, 'LabelHand')
     print(f"Data verification -> LabelHand: {label_check} (Exists: {os.path.exists(label_check)})")
     
-    models_to_run = ['unet', 'deeplabv3plus', 'segformer'] if args.model == 'all' else [args.model]
+    if args.model.lower() == 'all':
+        models_to_run = ['unet', 'deeplabv3plus', 'segformer', 'attentive_unet', 'manet', 'pan', 'farseg']
+    elif ',' in args.model:
+        models_to_run = [m.strip().lower() for m in args.model.split(',') if m.strip()]
+    else:
+        models_to_run = [args.model.lower()]
     all_summaries = []
     
     for m in models_to_run:

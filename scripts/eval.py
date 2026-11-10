@@ -15,6 +15,10 @@ from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
 from models.prithvi_wrapper import PrithviAdapter
 from models.dofa_wrapper import DOFAAdapter
+from models.manet import MANet
+from models.attentive_unet import AttentiveUNet
+from models.pan import PAN
+from models.farseg import FarSeg
 
 def build_model(model_name, modality, num_classes=2):
     in_channels = 2 if modality == 's1' else (13 if modality == 's2' else 15)
@@ -29,6 +33,14 @@ def build_model(model_name, modality, num_classes=2):
         return PrithviAdapter(in_channels=in_channels, num_classes=num_classes)
     elif name == 'dofa':
         return DOFAAdapter(in_channels=in_channels, num_classes=num_classes)
+    elif name == 'manet':
+        return MANet(in_channels=in_channels, num_classes=num_classes)
+    elif name in ['attentive_unet', 'attentiveunet', 'attentive_s1']:
+        return AttentiveUNet(in_channels=in_channels, num_classes=num_classes)
+    elif name == 'pan':
+        return PAN(in_channels=in_channels, num_classes=num_classes)
+    elif name == 'farseg':
+        return FarSeg(in_channels=in_channels, num_classes=num_classes)
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 

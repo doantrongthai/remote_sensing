@@ -14,6 +14,10 @@ from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
 from models.prithvi_wrapper import PrithviAdapter
 from models.dofa_wrapper import DOFAAdapter
+from models.manet import MANet
+from models.attentive_unet import AttentiveUNet
+from models.pan import PAN
+from models.farseg import FarSeg
 
 def test_split_counts(data_path):
     res = verify_dataset(data_path)
@@ -97,6 +101,22 @@ def test_model_forward():
     m_dofa = DOFAAdapter(in_channels=2, num_classes=2, depth=2)
     out_dofa = m_dofa(x_s1)
     assert out_dofa.shape == (1, 2, 256, 256)
+    
+    m_attentive = AttentiveUNet(in_channels=2, num_classes=2)
+    out_attentive = m_attentive(x_s1)
+    assert out_attentive.shape == (1, 2, 256, 256)
+    
+    m_manet = MANet(in_channels=2, num_classes=2)
+    out_manet = m_manet(x_s1)
+    assert out_manet.shape == (1, 2, 256, 256)
+    
+    m_pan = PAN(in_channels=2, num_classes=2)
+    out_pan = m_pan(x_s1)
+    assert out_pan.shape == (1, 2, 256, 256)
+    
+    m_farseg = FarSeg(in_channels=2, num_classes=2)
+    out_farseg = m_farseg(x_s1)
+    assert out_farseg.shape == (1, 2, 256, 256)
     
     return True
 

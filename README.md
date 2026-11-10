@@ -31,6 +31,10 @@ sen1floods11-bench/
 │   ├── unet.py            # U-Net implementation
 │   ├── deeplabv3plus.py   # DeepLabV3+ with ASPP
 │   ├── segformer.py       # SegFormer hierarchical transformer
+│   ├── attentive_unet.py  # Attentive U-Net for Flood Detection (Yadav et al., Frontiers 2022)
+│   ├── manet.py           # Multi-Attention Network (Li et al., IEEE TGRS 2021)
+│   ├── pan.py             # Pyramid Attention Network (Li et al., 2018)
+│   ├── farseg.py          # Foreground-Aware Relation Network (Zheng et al., CVPR 2020)
 │   ├── prithvi_wrapper.py # IBM-NASA Prithvi-100M foundation model adapter
 │   └── dofa_wrapper.py    # DOFA dynamic cross-modality adapter
 ├── registry/

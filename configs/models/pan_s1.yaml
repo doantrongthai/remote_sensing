@@ -1,0 +1,13 @@
+model: pan
+modality: s1
+in_channels: 2
+num_classes: 2
+batch_size: 32
+epochs: 25
+lr: 0.001
+weight_decay: 0.0001
+optimizer: AdamW
+scheduler: CosineAnnealingLR
+loss: BCEDiceLoss
+ignore_index: 255
+justification: "Pyramid Attention Network (Li et al., 2018) with Feature Pyramid Attention and Global Attention Upsampling."
