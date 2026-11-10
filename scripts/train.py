@@ -88,11 +88,11 @@ def train_single_model(model_name, args, device):
 
     model = get_model(model_name, in_channels=in_channels, num_classes=2).to(device)
     
-    crop_sz = args.crop_size if (args.crop_size and args.crop_size > 0) else None
-    train_ds = Sen1Floods11Dataset(args.data_dir, split='train', modality=args.modality, bands=args.bands, crop_size=crop_sz)
-    val_ds = Sen1Floods11Dataset(args.data_dir, split='valid', modality=args.modality, bands=args.bands, crop_size=crop_sz)
-    test_ds = Sen1Floods11Dataset(args.data_dir, split='test', modality=args.modality, bands=args.bands, crop_size=crop_sz)
-    bolivia_ds = Sen1Floods11Dataset(args.data_dir, split='bolivia', modality=args.modality, bands=args.bands, crop_size=crop_sz)
+    train_crop = args.crop_size if (args.crop_size and args.crop_size > 0) else None
+    train_ds = Sen1Floods11Dataset(args.data_dir, split='train', modality=args.modality, bands=args.bands, crop_size=train_crop)
+    val_ds = Sen1Floods11Dataset(args.data_dir, split='valid', modality=args.modality, bands=args.bands, crop_size=None)
+    test_ds = Sen1Floods11Dataset(args.data_dir, split='test', modality=args.modality, bands=args.bands, crop_size=None)
+    bolivia_ds = Sen1Floods11Dataset(args.data_dir, split='bolivia', modality=args.modality, bands=args.bands, crop_size=None)
     
     num_workers = args.num_workers
     pin_mem = torch.cuda.is_available()
@@ -190,7 +190,7 @@ def main():
     )
     parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 'procanet', 's1s2'])
     parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR (ProCANet paper), 13 for full S2')
-    parser.add_argument('--crop_size', type=int, default=128, help='Patch crop size (128 for ProCANet paper, or 0/None for full)')
+    parser.add_argument('--crop_size', type=int, default=0, help='Patch crop size (0 for full 256x256, 128 for patch crop)')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=25)
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (1e-4 in ProCANet paper)')
