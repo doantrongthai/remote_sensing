@@ -48,16 +48,10 @@ from metrics.evaluator import FloodMetricEvaluator
 from models.unet import UNet
 from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
-from models.unet_mobilenet import UNetMobileNetV2
-from models.procanet import ProCANet
 
 def get_model(name, in_channels, num_classes=2):
     n = name.lower()
-    if n in ['unet_mobilenet', 'unet_mobilenetv2']:
-        return UNetMobileNetV2(in_channels=in_channels, num_classes=num_classes)
-    elif n == 'procanet':
-        return ProCANet(in_channels=in_channels, num_classes=num_classes)
-    elif n == 'unet':
+    if n == 'unet':
         return UNet(in_channels=in_channels, num_classes=num_classes)
     elif n == 'deeplabv3plus':
         return DeepLabV3Plus(in_channels=in_channels, num_classes=num_classes)
@@ -79,7 +73,7 @@ def run_eval(model, loader, device):
 def train_single_model(model_name, args, device):
     if args.modality == 's1':
         in_channels = 2
-    elif args.modality in ['s2', 's2_4ch', 'procanet']:
+    elif args.modality in ['s2', 's2_4ch']:
         in_channels = args.bands
     elif args.modality == 's1s2':
         in_channels = 2 + args.bands
@@ -121,7 +115,7 @@ def train_single_model(model_name, args, device):
     best_ckpt = os.path.join(args.save_dir, f"{model_name}_{args.modality}_best.pth")
     best_val_iou = -1.0
     
-    print(f"\n--- Training {model_name.upper()} | Modality: {args.modality.upper()} ({args.bands} bands) | Crop: {crop_sz} | Epochs: {args.epochs} | Batch: {args.batch_size} ---")
+    print(f"\n--- Training {model_name.upper()} | Modality: {args.modality.upper()} ({args.bands} bands: RGB+NIR) | Epochs: {args.epochs} | Batch: {args.batch_size} ---")
     
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
@@ -174,7 +168,7 @@ def train_single_model(model_name, args, device):
     return summary
 
 def main():
-    parser = argparse.ArgumentParser(description="Sen1Floods11 Benchmark & ProCANet Replication Engine")
+    parser = argparse.ArgumentParser(description="Sen1Floods11 Remote Sensing Benchmark Engine")
     parser.add_argument(
         '--data_dir', 
         type=str, 
@@ -186,14 +180,14 @@ def main():
         '--model', 
         type=str, 
         default='all', 
-        choices=['all', 'baselines', 'unet', 'deeplabv3plus', 'segformer', 'procanet', 'unet_mobilenet', 'procanet_benchmark', 'full']
+        choices=['all', 'unet', 'deeplabv3plus', 'segformer']
     )
-    parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 'procanet', 's1s2'])
+    parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 's1s2'])
     parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR, 13 for full Sentinel-2')
-    parser.add_argument('--crop_size', type=int, default=0, help='Patch crop size (0 for full 256x256, 128 for patch crop)')
+    parser.add_argument('--crop_size', type=int, default=0, help='Patch crop size (0 for full 256x256)')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=25)
-    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (1e-4)')
+    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (default: 1e-4)')
     parser.add_argument('--optimizer', type=str, default='adamw', choices=['adam', 'adamw'], help='Optimizer')
     parser.add_argument('--scheduler', type=str, default='cosine', choices=['cosine', 'cosine_restarts'], help='Scheduler')
     parser.add_argument('--num_workers', type=int, default=2)
@@ -205,19 +199,11 @@ def main():
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-    print(f"Device: {device} | Data: {args.data_dir} | Modality: {args.modality} ({args.bands} bands: RGB+NIR) | LR: {args.lr}")
+    print(f"Device: {device} | Data: {args.data_dir} | Modality: {args.modality} ({args.bands} bands) | LR: {args.lr}")
     label_check = os.path.join(args.data_dir, 'LabelHand')
     print(f"Data verification -> LabelHand: {label_check} (Exists: {os.path.exists(label_check)})")
     
-    if args.model in ['all', 'baselines']:
-        models_to_run = ['unet', 'deeplabv3plus', 'segformer']
-    elif args.model == 'procanet_benchmark':
-        models_to_run = ['unet_mobilenet', 'procanet']
-    elif args.model == 'full':
-        models_to_run = ['unet', 'deeplabv3plus', 'segformer', 'unet_mobilenet', 'procanet']
-    else:
-        models_to_run = [args.model]
-        
+    models_to_run = ['unet', 'deeplabv3plus', 'segformer'] if args.model == 'all' else [args.model]
     all_summaries = []
     
     for m in models_to_run:
@@ -225,23 +211,13 @@ def main():
         all_summaries.append(res)
         
     print("\n" + "="*95)
-    print(f"{'PROCANET BENCHMARK SUMMARY (SEN1FLOODS11 S2 TEST SET)':^95}")
+    print(f"{'BENCHMARK SUMMARY (SEN1FLOODS11)':^95}")
     print("="*95)
-    print(f"{'Model':<18} | {'Bands':<6} | {'Accuracy':<10} | {'F1-Score':<10} | {'Test IoU':<10} | {'Paper Target IoU':<16} | {'Bolivia IoU':<12}")
+    print(f"{'Model':<16} | {'Modality':<8} | {'Bands':<6} | {'Val IoU':<10} | {'Test IoU':<10} | {'Bolivia IoU':<12} | {'Test F1':<10} | {'Test Acc':<10}")
     print("-" * 95)
-    
-    targets = {
-        'UNET_MOBILENET': '0.791 (Table I)',
-        'PROCANET': '0.815 (Table I)',
-        'UNET': '0.791 (Table I)',
-        'DEEPLABV3PLUS': '~0.784',
-        'SEGFORMER': '~0.802'
-    }
-    
     for s in all_summaries:
         m_name = s['model'].upper()
-        tgt = targets.get(m_name, '-')
-        print(f"{m_name:<18} | {s['bands']:<6} | {s['test_accuracy']:<10.4f} | {s['test_f1']:<10.4f} | {s['test_water_iou']:<10.4f} | {tgt:<16} | {s['bolivia_water_iou']:<12.4f}")
+        print(f"{m_name:<16} | {s['modality'].upper():<8} | {s['bands']:<6} | {s['best_val_water_iou']:<10.4f} | {s['test_water_iou']:<10.4f} | {s['bolivia_water_iou']:<12.4f} | {s['test_f1']:<10.4f} | {s['test_accuracy']:<10.4f}")
     print("="*95 + "\n")
     
     out_json = os.path.join(args.save_dir, "benchmark_results.json")

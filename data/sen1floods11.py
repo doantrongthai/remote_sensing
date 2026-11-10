@@ -51,12 +51,12 @@ class Sen1Floods11Dataset(Dataset):
         
         # If bands is not explicitly passed, infer from modality
         if self.bands is None:
-            if self.modality in ['s2_4ch', 'procanet']:
-                self.bands = 4
-            elif self.modality == 's2':
-                self.bands = 4  # Default to 4 channels for ProCANet standard unless overridden
+            if self.modality == 's1':
+                self.bands = 2
+            elif self.modality in ['s2', 's2_4ch']:
+                self.bands = 4  # Default: 4 channels (Red, Green, Blue, NIR)
             else:
-                self.bands = 2 if self.modality == 's1' else 13
+                self.bands = 4
         
         split_map = {
             'train': 'flood_train_data.csv',
@@ -122,7 +122,7 @@ class Sen1Floods11Dataset(Dataset):
         
         if self.modality == 's1':
             img = self._load_s1(s1_file)
-        elif self.modality in ['s2', 's2_4ch', 'procanet']:
+        elif self.modality in ['s2', 's2_4ch']:
             img = self._load_s2(s1_file)
         elif self.modality == 's1s2':
             s1 = self._load_s1(s1_file)
