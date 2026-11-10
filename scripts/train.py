@@ -185,17 +185,17 @@ def main():
     parser.add_argument(
         '--model', 
         type=str, 
-        default='procanet_benchmark', 
-        choices=['unet_mobilenet', 'procanet', 'unet', 'deeplabv3plus', 'segformer', 'all', 'procanet_benchmark']
+        default='all', 
+        choices=['all', 'baselines', 'unet', 'deeplabv3plus', 'segformer', 'procanet', 'unet_mobilenet', 'procanet_benchmark', 'full']
     )
     parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 'procanet', 's1s2'])
-    parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR (ProCANet paper), 13 for full S2')
+    parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR, 13 for full Sentinel-2')
     parser.add_argument('--crop_size', type=int, default=0, help='Patch crop size (0 for full 256x256, 128 for patch crop)')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=25)
-    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (1e-4 in ProCANet paper)')
-    parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'adamw'], help='Optimizer')
-    parser.add_argument('--scheduler', type=str, default='cosine_restarts', choices=['cosine_restarts', 'cosine'], help='Scheduler')
+    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (1e-4)')
+    parser.add_argument('--optimizer', type=str, default='adamw', choices=['adam', 'adamw'], help='Optimizer')
+    parser.add_argument('--scheduler', type=str, default='cosine', choices=['cosine', 'cosine_restarts'], help='Scheduler')
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--device', type=str, default='')
     args = parser.parse_args()
@@ -205,14 +205,16 @@ def main():
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-    print(f"Device: {device} | Data: {args.data_dir}")
+    print(f"Device: {device} | Data: {args.data_dir} | Modality: {args.modality} ({args.bands} bands: RGB+NIR) | LR: {args.lr}")
     label_check = os.path.join(args.data_dir, 'LabelHand')
     print(f"Data verification -> LabelHand: {label_check} (Exists: {os.path.exists(label_check)})")
     
-    if args.model == 'procanet_benchmark':
+    if args.model in ['all', 'baselines']:
+        models_to_run = ['unet', 'deeplabv3plus', 'segformer']
+    elif args.model == 'procanet_benchmark':
         models_to_run = ['unet_mobilenet', 'procanet']
-    elif args.model == 'all':
-        models_to_run = ['unet_mobilenet', 'procanet', 'unet', 'deeplabv3plus', 'segformer']
+    elif args.model == 'full':
+        models_to_run = ['unet', 'deeplabv3plus', 'segformer', 'unet_mobilenet', 'procanet']
     else:
         models_to_run = [args.model]
         
