@@ -29,7 +29,7 @@ def _find_dir(base_dir, target_name):
     return os.path.join(base_dir, target_name)
 
 class Sen1Floods11Dataset(Dataset):
-    def __init__(self, root_dir=None, split='train', modality='s1', crop_size=None, transform=None):
+    def __init__(self, root_dir=None, split='train', modality='s1', bands=None, crop_size=None, transform=None):
         if root_dir is None:
             # Fallback candidates for Kaggle and local environments
             candidates = [
@@ -45,8 +45,18 @@ class Sen1Floods11Dataset(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.modality = modality.lower()
+        self.bands = bands
         self.crop_size = crop_size
         self.transform = transform
+        
+        # If bands is not explicitly passed, infer from modality
+        if self.bands is None:
+            if self.modality in ['s2_4ch', 'procanet']:
+                self.bands = 4
+            elif self.modality == 's2':
+                self.bands = 4  # Default to 4 channels for ProCANet standard unless overridden
+            else:
+                self.bands = 2 if self.modality == 's1' else 13
         
         split_map = {
             'train': 'flood_train_data.csv',
@@ -95,6 +105,9 @@ class Sen1Floods11Dataset(Dataset):
         arr = np.nan_to_num(arr, nan=0.0)
         arr = arr / 10000.0
         arr = np.clip(arr, 0.0, 1.0)
+        # Select 4 channels (Red, Green, Blue, NIR) as in Feliren et al. (IEEE GRSL 2025)
+        if self.bands == 4 and arr.shape[0] >= 8:
+            arr = arr[[3, 2, 1, 7], :, :]  # B4 (Red), B3 (Green), B2 (Blue), B8 (NIR)
         return arr
 
     def _load_label(self, filename):
@@ -109,7 +122,7 @@ class Sen1Floods11Dataset(Dataset):
         
         if self.modality == 's1':
             img = self._load_s1(s1_file)
-        elif self.modality == 's2':
+        elif self.modality in ['s2', 's2_4ch', 'procanet']:
             img = self._load_s2(s1_file)
         elif self.modality == 's1s2':
             s1 = self._load_s1(s1_file)
@@ -122,12 +135,26 @@ class Sen1Floods11Dataset(Dataset):
 
         if self.crop_size is not None:
             _, h, w = img.shape
-            ch, cw = self.crop_size
+            ch, cw = (self.crop_size, self.crop_size) if isinstance(self.crop_size, int) else self.crop_size
             if h >= ch and w >= cw:
-                top = np.random.randint(0, h - ch + 1)
-                left = np.random.randint(0, w - cw + 1)
-                img = img[:, top:top+ch, left:left+cw]
-                label = label[top:top+ch, left:left+cw]
+                if self.split == 'train':
+                    # Feliren et al. Section II.D: filter patches with >50% nodata (255)
+                    best_top, best_left = 0, 0
+                    for _ in range(10):
+                        top = np.random.randint(0, h - ch + 1)
+                        left = np.random.randint(0, w - cw + 1)
+                        sub_lbl = label[top:top+ch, left:left+cw]
+                        if np.mean(sub_lbl == 255) < 0.5:
+                            best_top, best_left = top, left
+                            break
+                    img = img[:, best_top:best_top+ch, best_left:best_left+cw]
+                    label = label[best_top:best_top+ch, best_left:best_left+cw]
+                else:
+                    # Center crop for evaluation consistency
+                    top = (h - ch) // 2
+                    left = (w - cw) // 2
+                    img = img[:, top:top+ch, left:left+cw]
+                    label = label[top:top+ch, left:left+cw]
 
         img_tensor = torch.from_numpy(img).float()
         label_tensor = torch.from_numpy(label).long()

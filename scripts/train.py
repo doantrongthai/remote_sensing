@@ -48,10 +48,16 @@ from metrics.evaluator import FloodMetricEvaluator
 from models.unet import UNet
 from models.deeplabv3plus import DeepLabV3Plus
 from models.segformer import SegFormer
+from models.unet_mobilenet import UNetMobileNetV2
+from models.procanet import ProCANet
 
 def get_model(name, in_channels, num_classes=2):
     n = name.lower()
-    if n == 'unet':
+    if n in ['unet_mobilenet', 'unet_mobilenetv2']:
+        return UNetMobileNetV2(in_channels=in_channels, num_classes=num_classes)
+    elif n == 'procanet':
+        return ProCANet(in_channels=in_channels, num_classes=num_classes)
+    elif n == 'unet':
         return UNet(in_channels=in_channels, num_classes=num_classes)
     elif n == 'deeplabv3plus':
         return DeepLabV3Plus(in_channels=in_channels, num_classes=num_classes)
@@ -71,13 +77,22 @@ def run_eval(model, loader, device):
     return ev.compute()
 
 def train_single_model(model_name, args, device):
-    in_channels = 2 if args.modality == 's1' else (13 if args.modality == 's2' else 15)
+    if args.modality == 's1':
+        in_channels = 2
+    elif args.modality in ['s2', 's2_4ch', 'procanet']:
+        in_channels = args.bands
+    elif args.modality == 's1s2':
+        in_channels = 2 + args.bands
+    else:
+        in_channels = args.bands
+
     model = get_model(model_name, in_channels=in_channels, num_classes=2).to(device)
     
-    train_ds = Sen1Floods11Dataset(args.data_dir, split='train', modality=args.modality)
-    val_ds = Sen1Floods11Dataset(args.data_dir, split='valid', modality=args.modality)
-    test_ds = Sen1Floods11Dataset(args.data_dir, split='test', modality=args.modality)
-    bolivia_ds = Sen1Floods11Dataset(args.data_dir, split='bolivia', modality=args.modality)
+    crop_sz = args.crop_size if (args.crop_size and args.crop_size > 0) else None
+    train_ds = Sen1Floods11Dataset(args.data_dir, split='train', modality=args.modality, bands=args.bands, crop_size=crop_sz)
+    val_ds = Sen1Floods11Dataset(args.data_dir, split='valid', modality=args.modality, bands=args.bands, crop_size=crop_sz)
+    test_ds = Sen1Floods11Dataset(args.data_dir, split='test', modality=args.modality, bands=args.bands, crop_size=crop_sz)
+    bolivia_ds = Sen1Floods11Dataset(args.data_dir, split='bolivia', modality=args.modality, bands=args.bands, crop_size=crop_sz)
     
     num_workers = args.num_workers
     pin_mem = torch.cuda.is_available()
@@ -88,8 +103,17 @@ def train_single_model(model_name, args, device):
     bolivia_loader = DataLoader(bolivia_ds, batch_size=args.batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_mem)
     
     criterion = BCEDiceLoss(ignore_index=255)
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
+    
+    if args.optimizer.lower() == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    else:
+        optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+        
+    if args.scheduler == 'cosine_restarts':
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=2, eta_min=1e-6)
+    else:
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
+        
     scaler = get_grad_scaler()
     autocast_ctx = get_autocast
     
@@ -97,7 +121,7 @@ def train_single_model(model_name, args, device):
     best_ckpt = os.path.join(args.save_dir, f"{model_name}_{args.modality}_best.pth")
     best_val_iou = -1.0
     
-    print(f"\n--- Training {model_name.upper()} | Modality: {args.modality.upper()} | Epochs: {args.epochs} | Batch: {args.batch_size} ---")
+    print(f"\n--- Training {model_name.upper()} | Modality: {args.modality.upper()} ({args.bands} bands) | Crop: {crop_sz} | Epochs: {args.epochs} | Batch: {args.batch_size} ---")
     
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
@@ -137,16 +161,20 @@ def train_single_model(model_name, args, device):
     summary = {
         'model': model_name,
         'modality': args.modality,
+        'bands': args.bands,
         'best_val_water_iou': round(best_val_iou, 4),
+        'test_accuracy': round(test_res.get('accuracy', 0.0), 4),
+        'test_f1': round(test_res.get('f1_score', 0.0), 4),
         'test_water_iou': round(test_res['water_iou'], 4),
         'test_m_iou': round(test_res['m_iou'], 4),
         'bolivia_water_iou': round(bolivia_res['water_iou'], 4),
+        'bolivia_f1': round(bolivia_res.get('f1_score', 0.0), 4),
         'bolivia_m_iou': round(bolivia_res['m_iou'], 4)
     }
     return summary
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Sen1Floods11 Benchmark & ProCANet Replication Engine")
     parser.add_argument(
         '--data_dir', 
         type=str, 
@@ -154,11 +182,20 @@ def main():
         help='Root directory containing LabelHand, S1Hand, S2Hand, splits'
     )
     parser.add_argument('--save_dir', type=str, default='./checkpoints')
-    parser.add_argument('--model', type=str, default='unet', choices=['unet', 'deeplabv3plus', 'segformer', 'all'])
-    parser.add_argument('--modality', type=str, default='s1', choices=['s1', 's2', 's1s2'])
+    parser.add_argument(
+        '--model', 
+        type=str, 
+        default='procanet_benchmark', 
+        choices=['unet_mobilenet', 'procanet', 'unet', 'deeplabv3plus', 'segformer', 'all', 'procanet_benchmark']
+    )
+    parser.add_argument('--modality', type=str, default='s2', choices=['s1', 's2', 's2_4ch', 'procanet', 's1s2'])
+    parser.add_argument('--bands', type=int, default=4, choices=[4, 13], help='4 for RGB+NIR (ProCANet paper), 13 for full S2')
+    parser.add_argument('--crop_size', type=int, default=128, help='Patch crop size (128 for ProCANet paper, or 0/None for full)')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=25)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (1e-4 in ProCANet paper)')
+    parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'adamw'], help='Optimizer')
+    parser.add_argument('--scheduler', type=str, default='cosine_restarts', choices=['cosine_restarts', 'cosine'], help='Scheduler')
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--device', type=str, default='')
     args = parser.parse_args()
@@ -172,21 +209,38 @@ def main():
     label_check = os.path.join(args.data_dir, 'LabelHand')
     print(f"Data verification -> LabelHand: {label_check} (Exists: {os.path.exists(label_check)})")
     
-    models_to_run = ['unet', 'deeplabv3plus', 'segformer'] if args.model == 'all' else [args.model]
+    if args.model == 'procanet_benchmark':
+        models_to_run = ['unet_mobilenet', 'procanet']
+    elif args.model == 'all':
+        models_to_run = ['unet_mobilenet', 'procanet', 'unet', 'deeplabv3plus', 'segformer']
+    else:
+        models_to_run = [args.model]
+        
     all_summaries = []
     
     for m in models_to_run:
         res = train_single_model(m, args, device)
         all_summaries.append(res)
         
-    print("\n" + "="*80)
-    print(f"{'BENCHMARK SUMMARY':^80}")
-    print("="*80)
-    print(f"{'Model':<15} | {'Modality':<8} | {'Val Water IoU':<14} | {'Test Water IoU':<15} | {'Bolivia Water IoU':<17}")
-    print("-" * 80)
+    print("\n" + "="*95)
+    print(f"{'PROCANET BENCHMARK SUMMARY (SEN1FLOODS11 S2 TEST SET)':^95}")
+    print("="*95)
+    print(f"{'Model':<18} | {'Bands':<6} | {'Accuracy':<10} | {'F1-Score':<10} | {'Test IoU':<10} | {'Paper Target IoU':<16} | {'Bolivia IoU':<12}")
+    print("-" * 95)
+    
+    targets = {
+        'UNET_MOBILENET': '0.791 (Table I)',
+        'PROCANET': '0.815 (Table I)',
+        'UNET': '0.791 (Table I)',
+        'DEEPLABV3PLUS': '~0.784',
+        'SEGFORMER': '~0.802'
+    }
+    
     for s in all_summaries:
-        print(f"{s['model'].upper():<15} | {s['modality'].upper():<8} | {s['best_val_water_iou']:<14} | {s['test_water_iou']:<15} | {s['bolivia_water_iou']:<17}")
-    print("="*80 + "\n")
+        m_name = s['model'].upper()
+        tgt = targets.get(m_name, '-')
+        print(f"{m_name:<18} | {s['bands']:<6} | {s['test_accuracy']:<10.4f} | {s['test_f1']:<10.4f} | {s['test_water_iou']:<10.4f} | {tgt:<16} | {s['bolivia_water_iou']:<12.4f}")
+    print("="*95 + "\n")
     
     out_json = os.path.join(args.save_dir, "benchmark_results.json")
     with open(out_json, "w") as f:

@@ -71,9 +71,13 @@ class FloodMetricEvaluator:
         f1_denom = precision + recall
         f1_score = (2.0 * precision * recall / f1_denom) if f1_denom > 0 else 0.0
         
+        total_pix = tp + fp + fn + tn
+        accuracy = ((tp + tn) / total_pix) if total_pix > 0 else 0.0
+        
         mean_chip_water_iou = float(np.mean(self.chip_water_ious)) if len(self.chip_water_ious) > 0 else 0.0
         
         return {
+            'accuracy': accuracy,
             'water_iou': water_iou,
             'bg_iou': bg_iou,
             'm_iou': mean_iou,
