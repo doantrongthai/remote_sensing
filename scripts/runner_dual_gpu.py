@@ -23,17 +23,19 @@ def run_command_stream(cmd, prefix):
     return proc.returncode
 
 def run_pair_concurrent(cmd0, cmd1, name0, name1):
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     print("=" * 80)
     print(f"DUAL-GPU DISPATCH -> GPU 0: {name0.upper()} | GPU 1: {name1.upper()}")
+    print(f"Working directory: {repo_root}")
     print("=" * 80)
     
     p0 = subprocess.Popen(
-        cmd0, shell=True,
+        cmd0, shell=True, cwd=repo_root,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1
     )
     p1 = subprocess.Popen(
-        cmd1, shell=True,
+        cmd1, shell=True, cwd=repo_root,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1
     )
