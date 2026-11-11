@@ -81,6 +81,9 @@ def get_model(name, in_channels, num_classes=2):
         'attentive_s1': models.AttentiveUNet,
         'proca': models.ProCANet,
         'shadowfree': models.ShadowFreeNet,
+        'shadowfree_v2': models.ShadowFreeNetV2,
+        'shadowfree_net_v2': models.ShadowFreeNetV2,
+        'shadowfreenetv2': models.ShadowFreeNetV2,
         'unet++': models.UNetPlusPlus,
         'hrnet': models.HRNetV2,
         'swinunet': models.SwinUnet,
@@ -179,6 +182,8 @@ def train_single_run(model_name, seed, args, device):
                 else:
                     logits = out
                 loss = criterion(logits, masks)
+                if hasattr(model, 'get_ortho_loss'):
+                    loss = loss + 0.05 * model.get_ortho_loss()
                 
             scaler.scale(loss).backward()
             if args.clip_grad > 0:
@@ -378,6 +383,7 @@ def main():
     print(f"Device: {device} | Seeds: {seeds} | Data: {args.data_dir} | Modality: {args.modality} ({args.bands} bands)")
     
     all_standard_models = [
+        'shadowfree_net_v2',
         'shadowfree_net',
         'procanet',
         'unet',

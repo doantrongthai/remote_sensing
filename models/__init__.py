@@ -1,5 +1,6 @@
 # Proposed Champion Architecture (Shadow-Water Physics-Guided)
 from models.shadowfree_net import ShadowFreeNet
+from models.shadowfree_net_v2 import ShadowFreeNetV2
 
 # Direct SOTA Baseline (Feliren et al., IEEE GRSL 2025)
 from models.procanet import ProCANet
@@ -25,6 +26,7 @@ from models.swin_unet import SwinUnet
 __all__ = [
     # Proposed
     'ShadowFreeNet',
+    'ShadowFreeNetV2',
     # SOTA Baseline
     'ProCANet',
     # Classical Baselines

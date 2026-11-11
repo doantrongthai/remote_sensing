@@ -118,7 +118,7 @@ def main():
     # Mode 3: Run all 14 models split 7 on GPU 0 and 7 on GPU 1 concurrently
     if args.all:
         group_0 = [
-            'shadowfree_net',
+            'shadowfree_net_v2',
             'unet',
             'deeplabv3plus',
             'hrnet',
@@ -127,6 +127,7 @@ def main():
             'manet'
         ]
         group_1 = [
+            'shadowfree_net',
             'procanet',
             'unetplusplus',
             'pspnet',
