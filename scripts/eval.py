@@ -10,24 +10,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from data.sen1floods11 import Sen1Floods11Dataset
 from data.window_generator import generate_quadrants, stitch_quadrants
 from metrics.evaluator import FloodMetricEvaluator
-from models.unet import UNet
-from models.deeplabv3plus import DeepLabV3Plus
-from models.segformer import SegFormer
-from models.prithvi_wrapper import PrithviAdapter
-from models.dofa_wrapper import DOFAAdapter
-from models.manet import MANet
-from models.attentive_unet import AttentiveUNet
-from models.pan import PAN
-from models.farseg import FarSeg
-from models.hydropins_net import HydroPINSNet
-from models.wavelet_procanet_v2 import WaveletProCANetV2
-from models.edgeflow_net import EdgeFlowNet
-from models.stripcross_net_v2 import StripCrossNetV2
-from models.wavekan_hydronet import WaveKANHydroNet
-from models.spectralgate_net import SpectralGateNet
-from models.turbidwater_net import TurbidWaterNet
-from models.shadowfree_net import ShadowFreeNet
-
 import models
 
 def build_model(model_name, modality, num_classes=2):
