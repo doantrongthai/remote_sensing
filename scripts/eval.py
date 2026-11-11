@@ -1,5 +1,11 @@
 import sys
 import os
+
+_bench_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if _bench_root in sys.path:
+    sys.path.remove(_bench_root)
+sys.path.insert(0, _bench_root)
+
 import argparse
 import json
 import torch
