@@ -286,28 +286,56 @@ def train_model_multiseed(model_name, seeds, args, device):
 
 def save_benchmark_results(new_results, save_dir):
     os.makedirs(save_dir, exist_ok=True)
-    out_json = os.path.join(save_dir, "benchmark_results.json")
+    import glob
     
-    existing = {}
+    # 1. Save per-model individual JSON to avoid concurrent write collisions
+    for item in new_results:
+        m_name = item['model']
+        mod = item.get('modality', 's2')
+        per_model_path = os.path.join(save_dir, f"{m_name}_{mod}_results.json")
+        try:
+            with open(per_model_path, "w") as f:
+                json.dump(item, f, indent=2)
+        except Exception as e:
+            print(f"[Warning] Failed writing {per_model_path}: {e}")
+
+    # 2. Merge all existing per-model JSON files into benchmark_results.json
+    merged = {}
+    out_json = os.path.join(save_dir, "benchmark_results.json")
     if os.path.exists(out_json):
         try:
             with open(out_json, "r") as f:
                 loaded = json.load(f)
                 if isinstance(loaded, dict):
-                    existing = loaded
+                    merged.update(loaded)
                 elif isinstance(loaded, list):
-                    for item in loaded:
-                        if 'model' in item:
-                            existing[item['model']] = item
+                    for it in loaded:
+                        if 'model' in it:
+                            merged[it['model']] = it
         except Exception:
-            existing = {}
-            
+            pass
+
+    # Read all per-model files
+    for p in glob.glob(os.path.join(save_dir, "*_results.json")):
+        if os.path.basename(p) == "benchmark_results.json":
+            continue
+        try:
+            with open(p, "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and 'model' in data:
+                    merged[data['model']] = data
+        except Exception:
+            pass
+
     for item in new_results:
-        existing[item['model']] = item
+        merged[item['model']] = item
         
-    with open(out_json, "w") as f:
-        json.dump(existing, f, indent=2)
-    print(f"Benchmark results successfully updated at: {out_json}")
+    try:
+        with open(out_json, "w") as f:
+            json.dump(merged, f, indent=2)
+        print(f"Benchmark results successfully updated at: {out_json}")
+    except Exception as e:
+        print(f"[Warning] Failed writing merged {out_json}: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description="Sen1Floods11 Multi-Seed Remote Sensing Benchmark")
