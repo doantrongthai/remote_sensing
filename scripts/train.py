@@ -45,22 +45,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from data.sen1floods11 import Sen1Floods11Dataset
 from losses.losses import BCEDiceLoss
 from metrics.evaluator import FloodMetricEvaluator
-from models.unet import UNet
-from models.deeplabv3plus import DeepLabV3Plus
-from models.segformer import SegFormer
-from models.manet import MANet
-from models.attentive_unet import AttentiveUNet
-from models.pan import PAN
-from models.farseg import FarSeg
-from models.hydropins_net import HydroPINSNet
-from models.wavelet_procanet_v2 import WaveletProCANetV2
-from models.edgeflow_net import EdgeFlowNet
-from models.stripcross_net_v2 import StripCrossNetV2
-from models.wavekan_hydronet import WaveKANHydroNet
-from models.spectralgate_net import SpectralGateNet
-from models.turbidwater_net import TurbidWaterNet
-from models.shadowfree_net import ShadowFreeNet
-
 import models
 
 def get_model(name, in_channels, num_classes=2):
@@ -76,25 +60,14 @@ def get_model(name, in_channels, num_classes=2):
         'attentiveunet': models.AttentiveUNet,
         'attentive_s1': models.AttentiveUNet,
         'proca': models.ProCANet,
-        'proca_edge': models.ProCAEdgeNet,
-        'hydro_proca': models.HydroProCANet,
-        'wavelet_proca': models.WaveletProCANet,
-        'strip_proca': models.StripProCANet,
-        'bmg_proca': models.BMGProCANet,
-        'kan_proca': models.KANProCANet,
-        'hydropins': models.HydroPINSNet,
-        'edgeflow': models.EdgeFlowNet,
-        'stripcross': models.StripCrossNetV2,
-        'wavekan': models.WaveKANHydroNet,
-        'spectralgate': models.SpectralGateNet,
-        'turbidwater': models.TurbidWaterNet,
         'shadowfree': models.ShadowFreeNet,
         'unet++': models.UNetPlusPlus,
         'hrnet': models.HRNetV2,
+        'swinunet': models.SwinUnet,
     }
     if canonical in aliases:
         return aliases[canonical](in_channels=in_channels, num_classes=num_classes)
-    raise ValueError(f"Unknown model: '{name}'. Available models: {sorted(models.__all__)}")
+    raise ValueError(f"Unknown model: '{name}'. Available models: {sorted(set(models.__all__))}")
 
 def run_eval(model, loader, device):
     model.eval()

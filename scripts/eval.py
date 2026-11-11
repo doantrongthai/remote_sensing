@@ -52,33 +52,14 @@ def build_model(model_name, modality, num_classes=2):
         'attentiveunet': models.AttentiveUNet,
         'attentive_s1': models.AttentiveUNet,
         'proca': models.ProCANet,
-        'proca_edge': models.ProCAEdgeNet,
-        'hydro_proca': models.HydroProCANet,
-        'wavelet_proca': models.WaveletProCANet,
-        'strip_proca': models.StripProCANet,
-        'bmg_proca': models.BMGProCANet,
-        'kan_proca': models.KANProCANet,
-        'hydropins': models.HydroPINSNet,
-        'edgeflow': models.EdgeFlowNet,
-        'stripcross': models.StripCrossNetV2,
-        'wavekan': models.WaveKANHydroNet,
-        'spectralgate': models.SpectralGateNet,
-        'turbidwater': models.TurbidWaterNet,
         'shadowfree': models.ShadowFreeNet,
         'unet++': models.UNetPlusPlus,
         'hrnet': models.HRNetV2,
+        'swinunet': models.SwinUnet,
     }
     if canonical in aliases:
         return aliases[canonical](in_channels=in_channels, num_classes=num_classes)
-    raise ValueError(f"Unknown model: '{model_name}'. Available: {sorted(models.__all__)}")
-    elif name in ['spectralgate_net', 'spectralgatenet', 'spectralgate']:
-        return SpectralGateNet(in_channels=in_channels, num_classes=num_classes)
-    elif name in ['turbidwater_net', 'turbidwaternet', 'turbidwater']:
-        return TurbidWaterNet(in_channels=in_channels, num_classes=num_classes)
-    elif name in ['shadowfree_net', 'shadowfreenet', 'shadowfree']:
-        return ShadowFreeNet(in_channels=in_channels, num_classes=num_classes)
-    else:
-        raise ValueError(f"Unsupported model: {model_name}")
+    raise ValueError(f"Unknown model: '{model_name}'. Available: {sorted(set(models.__all__))}")
 
 def evaluate(args):
     device = torch.device(args.device if torch.cuda.is_available() and args.device == 'cuda' else 'cpu')
